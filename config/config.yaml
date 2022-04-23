@@ -1,0 +1,125 @@
+substitutions:
+  # https://esphome.io/guides/configuration-types.html#substitutions
+  devicename: co2_sensor
+  friendly_name: "CO2 sensor"
+  blynk_token: !secret co2_blynk_token
+
+esphome:
+  name: $devicename
+  platform: ESP8266
+  board: d1_mini
+  on_boot:
+    priority: 600
+    then:
+      - switch.turn_on: display_switch
+      - switch.turn_on: mhz_abc
+
+wifi:
+  networks:
+    - ssid: !secret wifi_home_ssid
+      password: !secret wifi_home_password
+    - ssid: !secret wifi_y_ssid
+      password: !secret wifi_y_password
+  ap:
+    ssid: "$friendly_name Fallback Hotspot"
+    password: "hello123456"
+# captive_portal:
+
+logger:
+  level: DEBUG
+
+api:
+  password: !secret api_password
+
+ota:
+  safe_mode: true
+  password: !secret ota_password
+
+web_server:
+  port: 80
+
+
+# i2c:
+#   sda: D2
+#   scl: D1
+#   scan: False
+
+http_request:
+  useragent: esphome/device
+  timeout: 10s
+
+uart:
+  - id: co2_uart
+    rx_pin: GPIO14
+    tx_pin: GPIO13
+    baud_rate: 9600
+
+sensor:
+  - <<: !include sensors/rssi.yaml
+  - <<: !include sensors/uptime.yaml
+
+  - platform: mhz19
+    uart_id: co2_uart
+    id: mhz_19
+#    update_interval: 60s
+    co2:
+      id: mhz19_co2
+      name:  ${friendly_name} CO2 Value
+      on_value:
+        then:
+          - http_request.get: !lambda
+              char buf[128];
+              sprintf(buf,"https://lon1.blynk.cloud/external/api/update?token=${blynk_token}&v0=%.0f", id(mhz19_co2).state);
+              return buf;
+            # return ((std::string) "https://esphome.io?state=" + id(my_sensor).state).c_str();
+    temperature:
+      id: mhz19_temperature
+      name: ${friendly_name} Temperature
+      disabled_by_default: true
+
+
+display:
+    - platform: tm1637
+      id: tm1637_display
+      clk_pin: GPIO2
+      dio_pin: GPIO12
+      # inverted: true
+      length: 4
+      update_interval: 10s
+      intensity: 0 # to 7
+      lambda: |-
+        if (id(display_switch).state) {
+          it.printf("%4.0f", id(mhz19_co2).state);
+        } else {
+          it.printf("");
+        }
+
+switch:
+  - platform: template
+    name: ${friendly_name} MH-Z19 ABC
+    id: "mhz_abc"
+    optimistic: true
+    on_turn_on:
+      mhz19.abc_enable: mhz_19
+    on_turn_off:
+      mhz19.abc_disable: mhz_19
+
+  - platform: template
+    name: ${friendly_name} display
+    id: "display_switch"
+    optimistic: true
+
+button:
+  - platform: template
+    name: ${friendly_name} MH-Z19 calibrate zero
+    disabled_by_default: true
+    entity_category: diagnostic
+    on_press:
+      - mhz19.calibrate_zero: mhz_19
+  - <<: !include buttons/restart.yaml
+
+text_sensor:
+  - <<: !include sensors/version.yaml
+
+debug:
+  update_interval: 5s

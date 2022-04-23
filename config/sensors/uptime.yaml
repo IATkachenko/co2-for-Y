@@ -1,0 +1,7 @@
+  # Reports how long the device has been powered (in hours) since last reboot
+  - platform: uptime
+    name: ${friendly_name} uptime
+    update_interval: 60s
+    filters:
+      - lambda: return x / 3600;
+    unit_of_measurement: "h"
