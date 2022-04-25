@@ -1,3 +1,2 @@
-
-  - platform: version
-    name: "ESPHome Version"
+- platform: version
+  name: "ESPHome Version"

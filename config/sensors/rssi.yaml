@@ -1,4 +1,4 @@
-  # Reports the WiFi signal strength
-  - platform: wifi_signal
-    name: ${friendly_name} RSSI
-    update_interval: 60s
+# Reports the WiFi signal strength
+- platform: wifi_signal
+  name: ${friendly_name} RSSI
+  update_interval: 60s

@@ -38,7 +38,6 @@ ota:
 web_server:
   port: 80
 
-
 # i2c:
 #   sda: D2
 #   scl: D1
@@ -61,38 +60,37 @@ sensor:
   - platform: mhz19
     uart_id: co2_uart
     id: mhz_19
-#    update_interval: 60s
+    # update_interval: 60s
     co2:
       id: mhz19_co2
-      name:  ${friendly_name} CO2 Value
+      name: ${friendly_name} CO2 Value
       on_value:
         then:
           - http_request.get: !lambda
               char buf[128];
               sprintf(buf,"https://lon1.blynk.cloud/external/api/update?token=${blynk_token}&v0=%.0f", id(mhz19_co2).state);
               return buf;
-            # return ((std::string) "https://esphome.io?state=" + id(my_sensor).state).c_str();
+              # return ((std::string) "https://esphome.io?state=" + id(my_sensor).state).c_str();
     temperature:
       id: mhz19_temperature
       name: ${friendly_name} Temperature
       disabled_by_default: true
 
-
 display:
-    - platform: tm1637
-      id: tm1637_display
-      clk_pin: GPIO2
-      dio_pin: GPIO12
-      # inverted: true
-      length: 4
-      update_interval: 10s
-      intensity: 0 # to 7
-      lambda: |-
-        if (id(display_switch).state) {
-          it.printf("%4.0f", id(mhz19_co2).state);
-        } else {
-          it.printf("");
-        }
+  - platform: tm1637
+    id: tm1637_display
+    clk_pin: GPIO2
+    dio_pin: GPIO12
+    # inverted: true
+    length: 4
+    update_interval: 10s
+    intensity: 0  # to 7
+    lambda: |-
+      if (id(display_switch).state) {
+        it.printf("%4.0f", id(mhz19_co2).state);
+      } else {
+        it.printf("");
+      }
 
 switch:
   - platform: template
